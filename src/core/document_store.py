@@ -118,8 +118,8 @@ class DocumentStore:
 
         doc = self._documents[doc_id]
         try:
-            # ChromaDB에서 해당 문서의 청크들 삭제
-            self.vectorstore._collection.delete(where={"file_hash": doc.file_hash})
+            # ChromaDB에서 해당 문서의 청크들 삭제 (공개 API 사용)
+            self.vectorstore.delete(where={"file_hash": doc.file_hash})
             del self._documents[doc_id]
             logger.info(f"문서 삭제 완료: {doc.filename}")
             return True

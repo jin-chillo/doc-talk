@@ -92,7 +92,7 @@ def render_chat_input(
 
                 for chunk, sources in rag_engine.query_stream(prompt):
                     full_response += chunk
-                    response_placeholder.markdown(full_response + "|")
+                    response_placeholder.markdown(full_response + "▌")
                     final_sources = sources
 
                 # 최종 응답

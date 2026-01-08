@@ -48,7 +48,7 @@ class ConversationManager:
     def _trim_history(self) -> None:
         """히스토리 최대 개수 유지."""
         max_messages = self.settings.max_history * 2  # user + assistant 쌍
-        if len(self._history) > max_messages:
+        if len(self._history) >= max_messages:
             # 가장 오래된 메시지부터 삭제 (시스템 메시지 제외)
             self._history = self._history[-max_messages:]
 

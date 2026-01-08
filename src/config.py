@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     # RAG Settings
     retrieval_k: int = 4
     max_history: int = 10
+    max_question_length: int = 2000  # 프롬프트 인젝션 방지 및 토큰 제한
 
     # File Constraints
     max_file_size_mb: int = 50
@@ -49,5 +50,8 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """설정 인스턴스 반환 (싱글톤 패턴)."""
+    """설정 인스턴스 반환 (싱글톤 패턴).
+
+    Note: pydantic-settings가 런타임에 .env에서 자동으로 인자를 로드함
+    """
     return Settings()  # type: ignore[call-arg]

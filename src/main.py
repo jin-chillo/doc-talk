@@ -1,6 +1,7 @@
 """doc-talk 메인 애플리케이션."""
 
 import streamlit as st
+from pydantic import ValidationError
 
 from src.config import Settings, get_settings
 from src.core.conversation import ConversationManager
@@ -50,7 +51,7 @@ def main() -> None:
     # 설정 로드
     try:
         settings = get_settings()
-    except Exception as e:
+    except (ValidationError, ValueError, OSError) as e:
         st.error(f"설정 로드 실패: {e}")
         st.info("`.env` 파일에 `GROQ_API_KEY`가 설정되어 있는지 확인하세요.")
         st.stop()

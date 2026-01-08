@@ -1,5 +1,6 @@
 """사이드바 UI 컴포넌트."""
 
+import html
 from typing import TYPE_CHECKING
 
 import streamlit as st
@@ -148,7 +149,7 @@ def render_document_list(document_store: DocumentStore) -> None:
 
         with col2:
             status_icon = "[v]" if doc.is_active else "[ ]"
-            st.markdown(f"{status_icon} **{doc.filename}**")
+            st.markdown(f"{status_icon} **{html.escape(doc.filename)}**")
             st.caption(f"{doc.total_pages}페이지 | {doc.chunk_count}청크")
 
         with col3:

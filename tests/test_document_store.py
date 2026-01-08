@@ -143,7 +143,8 @@ class TestDocumentStore:
 
         assert result is True
         assert sample_processed_doc.id not in document_store._documents
-        mock_chroma._collection.delete.assert_called_once_with(
+        # 공개 API 사용 확인 (vectorstore.delete)
+        mock_chroma.delete.assert_called_once_with(
             where={"file_hash": sample_processed_doc.file_hash}
         )
 
@@ -162,7 +163,8 @@ class TestDocumentStore:
         """문서 삭제 실패 시 예외 발생."""
         document_store.add_documents(sample_chunks, sample_processed_doc)
 
-        mock_chroma._collection.delete.side_effect = Exception("삭제 실패")
+        # 공개 API 사용 (vectorstore.delete)
+        mock_chroma.delete.side_effect = Exception("삭제 실패")
 
         with pytest.raises(VectorStoreError) as exc_info:
             document_store.remove_document(sample_processed_doc.id)
