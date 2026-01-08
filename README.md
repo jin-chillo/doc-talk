@@ -26,7 +26,7 @@ PDF 문서를 업로드하고 자연어로 질문하면 문서 내용을 기반�
 ### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/jin/doc-talk.git
+git clone https://github.com/jin-chillo/doc-talk.git
 cd doc-talk
 ```
 
