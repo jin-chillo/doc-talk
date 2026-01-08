@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "doc-talk"
+version = "1.0.0"
+description = "PDF 문서 기반 RAG 채팅 어시스턴트"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+
+dependencies = [
+    # Core LangChain
+    "langchain>=0.3.0,<0.4",
+    "langchain-community>=0.3.0,<0.4",
+    "langchain-groq>=0.2.0,<0.4",
+    "langchain-huggingface>=0.1.0,<0.4",
+    "langchain-chroma>=0.1.0,<0.3",
+
+    # PDF Processing
+    "pypdf>=4.0.0,<7",
+    "unstructured>=0.10.0,<1",
+
+    # Embeddings
+    "sentence-transformers>=2.2.0,<4",
+
+    # Vector Store
+    "chromadb>=0.5.0,<1.5",
+
+    # UI
+    "streamlit>=1.40.0,<1.41",
+
+    # Utilities
+    "python-dotenv>=1.0.0,<2",
+    "pydantic>=2.0.0,<3",
+    "pydantic-settings>=2.0.0,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0,<9",
+    "pytest-cov>=4.0.0,<5",
+    "pytest-asyncio>=0.23.0,<1",
+    "ruff>=0.8.0,<0.9",
+    "mypy>=1.0.0,<2",
+    "pre-commit>=3.0.0,<4",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+warn_return_any = false
+warn_unused_ignores = true
+exclude = ["tests"]
+
+[[tool.mypy.overrides]]
+module = ["pydantic.*", "langchain.*", "streamlit.*", "chromadb.*"]
+ignore_errors = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-v --cov=src --cov-report=term-missing"
+asyncio_mode = "auto"
