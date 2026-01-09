@@ -1,5 +1,7 @@
 """문서 저장소 관리 모듈."""
 
+import json
+from pathlib import Path
 
 import streamlit as st
 from langchain_chroma import Chroma
@@ -179,6 +181,33 @@ class DocumentStore:
         """
         return any(doc.file_hash == file_hash for doc in self._documents.values())
 
+    def clear_all(self) -> None:
+        """모든 문서 및 벡터 데이터 초기화.
+
+        ChromaDB 컬렉션의 모든 데이터와 메모리 내 문서 메타데이터를 삭제합니다.
+
+        Raises:
+            VectorStoreError: 초기화 실패 시
+        """
+        try:
+            # ChromaDB 컬렉션 삭제 후 재생성
+            if self._vectorstore is not None:
+                # 컬렉션의 모든 문서 삭제
+                collection = self._vectorstore._collection
+                # 모든 ID 가져와서 삭제
+                all_ids = collection.get()["ids"]
+                if all_ids:
+                    collection.delete(ids=all_ids)
+                logger.info("ChromaDB 컬렉션 초기화 완료")
+
+            # 메모리 내 문서 메타데이터 초기화
+            self._documents.clear()
+            logger.info("문서 저장소 전체 초기화 완료")
+
+        except Exception as e:
+            logger.error(f"문서 저장소 초기화 실패: {e}")
+            raise VectorStoreError(f"문서 저장소를 초기화할 수 없습니다: {e}") from e
+
     def similarity_search(
         self,
         query: str,
@@ -213,3 +242,38 @@ class DocumentStore:
         except Exception as e:
             logger.error(f"유사도 검색 실패: {e}")
             raise VectorStoreError(f"검색 중 오류가 발생했습니다: {e}") from e
+
+    def _get_save_path(self) -> Path:
+        """저장 파일 경로 반환."""
+        return self.settings.data_dir / "documents.json"
+
+    def save(self) -> None:
+        """문서 메타데이터를 파일에 저장."""
+        save_path = self._get_save_path()
+        try:
+            data = {
+                doc_id: doc.model_dump(mode="json")
+                for doc_id, doc in self._documents.items()
+            }
+            save_path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+            logger.info(f"문서 메타데이터 저장 완료: {len(self._documents)}개 문서")
+        except Exception as e:
+            logger.error(f"문서 메타데이터 저장 실패: {e}")
+
+    def load(self) -> None:
+        """파일에서 문서 메타데이터 복원."""
+        save_path = self._get_save_path()
+        if not save_path.exists():
+            logger.info("저장된 문서 메타데이터 없음")
+            return
+
+        try:
+            data = json.loads(save_path.read_text())
+            self._documents = {
+                doc_id: ProcessedDocument.model_validate(doc_data)
+                for doc_id, doc_data in data.items()
+            }
+            logger.info(f"문서 메타데이터 복원 완료: {len(self._documents)}개 문서")
+        except Exception as e:
+            logger.error(f"문서 메타데이터 복원 실패: {e}")
+            self._documents = {}

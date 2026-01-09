@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import streamlit as st
 
+from src.core.conversation import ConversationManager
 from src.core.document_store import DocumentStore
 from src.core.pdf_processor import PDFProcessor
 from src.ui.components import display_error, display_success, display_warning
@@ -20,6 +21,7 @@ def render_sidebar(
     settings: "Settings",
     pdf_processor: PDFProcessor,
     document_store: DocumentStore,
+    conversation: ConversationManager,
 ) -> None:
     """사이드바 렌더링.
 
@@ -27,6 +29,7 @@ def render_sidebar(
         settings: 애플리케이션 설정
         pdf_processor: PDF 처리기
         document_store: 문서 저장소
+        conversation: 대화 관리자
     """
     with st.sidebar:
         st.title("문서 관리")
@@ -38,6 +41,11 @@ def render_sidebar(
 
         # 문서 목록 섹션
         render_document_list(document_store)
+
+        st.divider()
+
+        # 전체 초기화 섹션
+        render_reset_section(document_store, conversation)
 
 
 def render_upload_section(
@@ -101,6 +109,7 @@ def process_uploaded_files(
 
             # 벡터 저장소에 추가
             document_store.add_documents(chunks, processed_doc)
+            document_store.save()  # 문서 메타데이터 저장
 
             success_count += 1
             display_success(f"업로드 완료: {filename}")
@@ -145,6 +154,7 @@ def render_document_list(document_store: DocumentStore) -> None:
             )
             if is_active != doc.is_active:
                 document_store.toggle_document_active(doc.id)
+                document_store.save()  # 상태 변경 저장
                 st.rerun()
 
         with col2:
@@ -156,7 +166,32 @@ def render_document_list(document_store: DocumentStore) -> None:
             if st.button("삭제", key=f"delete_{doc.id}"):
                 try:
                     document_store.remove_document(doc.id)
+                    document_store.save()  # 삭제 후 저장
                     display_success(f"삭제됨: {doc.filename}")
                     st.rerun()
                 except VectorStoreError as e:
                     display_error(e.message)
+
+
+def render_reset_section(
+    document_store: DocumentStore,
+    conversation: ConversationManager,
+) -> None:
+    """전체 초기화 섹션 렌더링.
+
+    Args:
+        document_store: 문서 저장소
+        conversation: 대화 관리자
+    """
+    st.subheader("초기화")
+
+    if st.button("전체 초기화", type="secondary", use_container_width=True):
+        try:
+            document_store.clear_all()
+            document_store.save()  # 빈 상태 저장
+            conversation.clear()
+            conversation.save()  # 빈 상태 저장
+            display_success("모든 문서와 대화가 초기화되었습니다.")
+            st.rerun()
+        except VectorStoreError as e:
+            display_error(e.message)

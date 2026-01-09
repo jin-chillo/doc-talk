@@ -20,9 +20,11 @@ def initialize_session_state(settings: Settings) -> None:
     """
     if "document_store" not in st.session_state:
         st.session_state.document_store = DocumentStore(settings)
+        st.session_state.document_store.load()  # 저장된 문서 메타데이터 복원
 
     if "conversation" not in st.session_state:
         st.session_state.conversation = ConversationManager(settings)
+        st.session_state.conversation.load()  # 저장된 대화 히스토리 복원
 
     if "pdf_processor" not in st.session_state:
         st.session_state.pdf_processor = PDFProcessor(settings)
@@ -73,6 +75,7 @@ def main() -> None:
         settings=settings,
         pdf_processor=st.session_state.pdf_processor,
         document_store=st.session_state.document_store,
+        conversation=st.session_state.conversation,
     )
 
     # 채팅 인터페이스 렌더링

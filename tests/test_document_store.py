@@ -314,3 +314,180 @@ class TestDocumentStore:
             document_store.similarity_search("테스트 질문")
 
         assert "검색 중 오류가 발생했습니다" in str(exc_info.value)
+
+    def test_clear_all(
+        self, document_store, sample_chunks, sample_processed_doc, mock_chroma
+    ):
+        """전체 초기화 테스트.
+
+        모든 문서와 벡터 데이터가 삭제되는지 확인.
+        """
+        # 문서 추가
+        document_store.add_documents(sample_chunks, sample_processed_doc)
+        assert len(document_store.get_documents()) == 1
+
+        # 벡터스토어 접근하여 초기화 (lazy loading 트리거)
+        _ = document_store.vectorstore
+
+        # mock 설정: collection.get()이 ID 목록 반환
+        mock_chroma._collection.get.return_value = {"ids": ["id1", "id2", "id3"]}
+
+        # 전체 초기화
+        document_store.clear_all()
+
+        # 메모리 내 문서 삭제 확인
+        assert len(document_store.get_documents()) == 0
+        assert document_store._documents == {}
+
+        # ChromaDB 컬렉션 삭제 호출 확인
+        mock_chroma._collection.get.assert_called_once()
+        mock_chroma._collection.delete.assert_called_once_with(ids=["id1", "id2", "id3"])
+
+    def test_clear_all_empty(self, document_store, mock_chroma):
+        """빈 상태에서 전체 초기화 테스트.
+
+        문서가 없을 때도 에러 없이 동작하는지 확인.
+        """
+        # 벡터스토어 접근하여 초기화
+        _ = document_store.vectorstore
+
+        # mock 설정: 빈 ID 목록
+        mock_chroma._collection.get.return_value = {"ids": []}
+
+        # 전체 초기화 (에러 없이 동작해야 함)
+        document_store.clear_all()
+
+        assert len(document_store.get_documents()) == 0
+        # 빈 목록이면 delete 호출하지 않음
+        mock_chroma._collection.delete.assert_not_called()
+
+    def test_clear_all_without_vectorstore(self, test_settings, mock_embeddings):
+        """벡터스토어 초기화 전 clear_all 호출 테스트.
+
+        벡터스토어가 None일 때도 메모리 초기화는 동작해야 함.
+        """
+        store = DocumentStore(settings=test_settings)
+
+        # 벡터스토어 접근하지 않은 상태 (None)
+        assert store._vectorstore is None
+
+        # 전체 초기화 (에러 없이 동작해야 함)
+        store.clear_all()
+
+        assert store._documents == {}
+
+    def test_clear_all_error(
+        self, document_store, sample_chunks, sample_processed_doc, mock_chroma
+    ):
+        """전체 초기화 실패 시 예외 발생."""
+        # 문서 추가
+        document_store.add_documents(sample_chunks, sample_processed_doc)
+
+        # 벡터스토어 접근
+        _ = document_store.vectorstore
+
+        # mock 설정: get() 호출 시 예외 발생
+        mock_chroma._collection.get.side_effect = Exception("초기화 실패")
+
+        with pytest.raises(VectorStoreError) as exc_info:
+            document_store.clear_all()
+
+        assert "문서 저장소를 초기화할 수 없습니다" in str(exc_info.value)
+
+    def test_save_and_load(
+        self, test_settings, mock_embeddings, mock_chroma, tmp_path
+    ):
+        """저장 및 복원 테스트."""
+        # 임시 디렉토리 사용
+        test_settings.data_dir = tmp_path
+
+        store = DocumentStore(settings=test_settings)
+
+        # 문서 추가
+        doc = ProcessedDocument(
+            id="doc-123",
+            filename="sample.pdf",
+            total_pages=5,
+            chunk_count=10,
+            file_hash="hash123",
+            is_active=True,
+        )
+        chunks = [
+            Document(
+                page_content="테스트 내용",
+                metadata={"source": "sample.pdf", "page": 1, "file_hash": "hash123"},
+            )
+        ]
+        store.add_documents(chunks, doc)
+
+        # 저장
+        store.save()
+
+        # 새 인스턴스에서 복원
+        new_store = DocumentStore(settings=test_settings)
+        assert len(new_store.get_documents()) == 0
+
+        new_store.load()
+
+        assert len(new_store.get_documents()) == 1
+        loaded_doc = new_store.get_documents()[0]
+        assert loaded_doc.filename == "sample.pdf"
+        assert loaded_doc.total_pages == 5
+        assert loaded_doc.is_active is True
+
+    def test_load_no_file(self, test_settings, mock_embeddings, tmp_path):
+        """저장 파일이 없을 때 복원."""
+        test_settings.data_dir = tmp_path
+
+        store = DocumentStore(settings=test_settings)
+        store.load()  # 에러 없이 동작
+
+        assert len(store.get_documents()) == 0
+
+    def test_save_empty_documents(self, test_settings, mock_embeddings, tmp_path):
+        """빈 문서 목록 저장."""
+        test_settings.data_dir = tmp_path
+
+        store = DocumentStore(settings=test_settings)
+        store.save()  # 에러 없이 동작
+
+        # 파일이 생성됨
+        save_path = tmp_path / "documents.json"
+        assert save_path.exists()
+
+    def test_save_preserves_active_state(
+        self, test_settings, mock_embeddings, mock_chroma, tmp_path
+    ):
+        """활성화 상태가 저장/복원되는지 확인."""
+        test_settings.data_dir = tmp_path
+
+        store = DocumentStore(settings=test_settings)
+
+        doc = ProcessedDocument(
+            id="doc-123",
+            filename="sample.pdf",
+            total_pages=5,
+            chunk_count=10,
+            file_hash="hash123",
+            is_active=True,
+        )
+        chunks = [
+            Document(
+                page_content="내용",
+                metadata={"source": "sample.pdf", "page": 1, "file_hash": "hash123"},
+            )
+        ]
+        store.add_documents(chunks, doc)
+
+        # 비활성화
+        store.toggle_document_active("doc-123")
+        assert store.get_document("doc-123").is_active is False
+
+        # 저장 후 복원
+        store.save()
+
+        new_store = DocumentStore(settings=test_settings)
+        new_store.load()
+
+        # 비활성화 상태 유지
+        assert new_store.get_document("doc-123").is_active is False

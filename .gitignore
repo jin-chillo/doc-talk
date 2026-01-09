@@ -25,9 +25,11 @@ env/
 *.swo
 *~
 
-# Data (업로드/벡터DB)
+# Data (업로드/벡터DB/영속화)
 data/uploads/*
 data/chroma_db/*
+data/conversation.json
+data/documents.json
 !data/uploads/.gitkeep
 !data/chroma_db/.gitkeep
 
