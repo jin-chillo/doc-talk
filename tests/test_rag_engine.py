@@ -235,14 +235,14 @@ class TestRAGEngine:
             mock_llm_class.return_value = mock_llm
 
             # 첫 번째 호출
-            rag_engine.llm
+            _ = rag_engine.llm
             assert mock_llm_class.call_count == 1
 
             # 같은 모델로 다시 호출 - 재생성 안 됨
-            rag_engine.llm
+            _ = rag_engine.llm
             assert mock_llm_class.call_count == 1
 
             # 모델 변경
             rag_engine.settings.llm_model = "different-model"
-            rag_engine.llm
+            _ = rag_engine.llm
             assert mock_llm_class.call_count == 2

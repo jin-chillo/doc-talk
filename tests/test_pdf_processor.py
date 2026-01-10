@@ -251,7 +251,7 @@ class TestPDFProcessor:
 
         fake_file = BytesIO(b"%PDF-1.4 test")
 
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="로드 실패"):
             processor.process(fake_file, "test.pdf")
 
         # 파일이 삭제되었는지 확인
