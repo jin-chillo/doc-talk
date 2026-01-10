@@ -16,7 +16,7 @@
 |--------|------|----------|
 | **언어** | Python 3.11+ | 타입 힌트 필수 |
 | **UI** | Streamlit | 빠른 개발, Python 친화적 |
-| **LLM** | Groq API (Llama 3.3 70B) | 무료 티어, 초고속 추론, 한국어 지원 |
+| **LLM** | Groq API (Llama 3.1 8B) | 무료 티어, 초고속 추론, 한국어 지원 |
 | **Embedding** | HuggingFace (BGE-M3) | 무료, 다국어 지원 |
 | **Vector DB** | ChromaDB | 무료, 설치 간편, 메타데이터 지원 |
 | **PDF 처리** | PyPDF + Unstructured | 안정적, 다양한 PDF 형식 지원 |
@@ -165,7 +165,7 @@ GROQ_API_KEY=your_groq_api_key_here
 
 # Optional
 EMBEDDING_MODEL=BAAI/bge-m3
-LLM_MODEL=llama-3.3-70b-versatile
+LLM_MODEL=llama-3.1-8b-instant
 CHUNK_SIZE=1000
 CHUNK_OVERLAP=200
 MAX_HISTORY=10
