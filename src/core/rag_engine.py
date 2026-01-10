@@ -41,9 +41,6 @@ USER_PROMPT = """Question: {question}
 
 Based ONLY on the document context above, provide the answer. Quote the exact text from the document."""
 
-# 질문 최대 길이 (프롬프트 인젝션 방지 및 토큰 제한)
-MAX_QUESTION_LENGTH = 2000
-
 
 class RAGEngine:
     """RAG 파이프라인 클래스."""
@@ -65,22 +62,25 @@ class RAGEngine:
         self.document_store = document_store
         self.conversation = conversation_manager
         self._llm: ChatGroq | None = None
+        self._current_model: str | None = None
 
     @property
     def llm(self) -> ChatGroq:
         """LLM 인스턴스 반환."""
-        # 모델 변경 시 재생성
-        if self._llm is not None and self._llm.model_name != self.settings.llm_model:
-            self._llm = None
+        self._refresh_llm_if_needed()
+        assert self._llm is not None
+        return self._llm
 
-        if self._llm is None:
+    def _refresh_llm_if_needed(self) -> None:
+        """모델 변경 감지 시 LLM 인스턴스 재생성."""
+        if self._llm is None or self._current_model != self.settings.llm_model:
             self._llm = ChatGroq(
                 api_key=SecretStr(self.settings.groq_api_key),
                 model=self.settings.llm_model,
                 temperature=self.settings.llm_temperature,
                 max_tokens=self.settings.llm_max_tokens,
             )
-        return self._llm
+            self._current_model = self.settings.llm_model
 
     def _validate_question(self, question: str) -> None:
         """질문 입력 검증.
@@ -94,9 +94,9 @@ class RAGEngine:
         if not question or not question.strip():
             raise ValueError("질문을 입력해주세요.")
 
-        if len(question) > MAX_QUESTION_LENGTH:
+        if len(question) > self.settings.max_question_length:
             raise ValueError(
-                f"질문이 너무 깁니다. 최대 {MAX_QUESTION_LENGTH}자까지 입력 가능합니다. "
+                f"질문이 너무 깁니다. 최대 {self.settings.max_question_length}자까지 입력 가능합니다. "
                 f"(현재: {len(question)}자)"
             )
 

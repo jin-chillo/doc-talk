@@ -1,6 +1,6 @@
 """메시지 관련 데이터 모델."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -28,4 +28,4 @@ class Message(BaseModel):
     role: MessageRole = Field(..., description="메시지 역할")
     content: str = Field(..., description="메시지 내용")
     sources: list[Source] = Field(default_factory=list, description="출처 목록")
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))

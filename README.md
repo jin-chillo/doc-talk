@@ -16,7 +16,7 @@ PDF 문서를 업로드하고 자연어로 질문하면 문서 내용을 기반�
 |--------|------|
 | 언어 | Python 3.11+ |
 | UI | Streamlit |
-| LLM | Groq API (Llama 3.3 70B) |
+| LLM | Groq API (Llama 3.1 8B) |
 | Embedding | HuggingFace (BGE-M3) |
 | Vector DB | ChromaDB |
 | 오케스트레이션 | LangChain |
@@ -111,7 +111,7 @@ doc-talk/
 |------|------|--------|------|
 | `GROQ_API_KEY` | O | - | Groq API 키 |
 | `EMBEDDING_MODEL` | X | BAAI/bge-m3 | 임베딩 모델 |
-| `LLM_MODEL` | X | llama-3.3-70b-versatile | LLM 모델 |
+| `LLM_MODEL` | X | llama-3.1-8b-instant | LLM 모델 |
 | `CHUNK_SIZE` | X | 1000 | 청크 크기 |
 | `CHUNK_OVERLAP` | X | 200 | 청크 오버랩 |
 | `MAX_HISTORY` | X | 10 | 최대 대화 히스토리 |

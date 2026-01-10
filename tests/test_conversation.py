@@ -103,3 +103,48 @@ class TestConversationManager:
 
         assert history1 is not history2
         assert history1[0].content == history2[0].content
+
+    def test_save_and_load(self, test_settings, tmp_path):
+        """저장 및 복원 테스트."""
+        # 임시 디렉토리 사용
+        test_settings.data_dir = tmp_path
+
+        manager = ConversationManager(test_settings)
+        sources = [Source(document_name="test.pdf", page=1, content_preview="미리보기")]
+
+        manager.add_message(MessageRole.USER, "질문입니다")
+        manager.add_message(MessageRole.ASSISTANT, "답변입니다", sources)
+
+        # 저장
+        manager.save()
+
+        # 새 인스턴스에서 복원
+        new_manager = ConversationManager(test_settings)
+        assert len(new_manager) == 0
+
+        new_manager.load()
+
+        assert len(new_manager) == 2
+        assert new_manager.get_history()[0].content == "질문입니다"
+        assert new_manager.get_history()[1].content == "답변입니다"
+        assert len(new_manager.get_history()[1].sources) == 1
+
+    def test_load_no_file(self, test_settings, tmp_path):
+        """저장 파일이 없을 때 복원."""
+        test_settings.data_dir = tmp_path
+
+        manager = ConversationManager(test_settings)
+        manager.load()  # 에러 없이 동작
+
+        assert len(manager) == 0
+
+    def test_save_empty_history(self, test_settings, tmp_path):
+        """빈 히스토리 저장."""
+        test_settings.data_dir = tmp_path
+
+        manager = ConversationManager(test_settings)
+        manager.save()  # 에러 없이 동작
+
+        # 파일이 생성됨
+        save_path = tmp_path / "conversation.json"
+        assert save_path.exists()

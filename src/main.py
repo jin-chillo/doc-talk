@@ -1,6 +1,7 @@
 """doc-talk 메인 애플리케이션."""
 
 import streamlit as st
+from pydantic import ValidationError
 
 from src.config import Settings, get_settings
 from src.core.conversation import ConversationManager
@@ -19,9 +20,11 @@ def initialize_session_state(settings: Settings) -> None:
     """
     if "document_store" not in st.session_state:
         st.session_state.document_store = DocumentStore(settings)
+        st.session_state.document_store.load()  # 저장된 문서 메타데이터 복원
 
     if "conversation" not in st.session_state:
         st.session_state.conversation = ConversationManager(settings)
+        st.session_state.conversation.load()  # 저장된 대화 히스토리 복원
 
     if "pdf_processor" not in st.session_state:
         st.session_state.pdf_processor = PDFProcessor(settings)
@@ -50,7 +53,7 @@ def main() -> None:
     # 설정 로드
     try:
         settings = get_settings()
-    except Exception as e:
+    except (ValidationError, ValueError, OSError) as e:
         st.error(f"설정 로드 실패: {e}")
         st.info("`.env` 파일에 `GROQ_API_KEY`가 설정되어 있는지 확인하세요.")
         st.stop()
@@ -72,6 +75,7 @@ def main() -> None:
         settings=settings,
         pdf_processor=st.session_state.pdf_processor,
         document_store=st.session_state.document_store,
+        conversation=st.session_state.conversation,
     )
 
     # 채팅 인터페이스 렌더링

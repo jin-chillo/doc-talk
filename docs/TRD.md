@@ -57,7 +57,7 @@ User Query → Query Embedding → Similarity Search → Context Retrieval
 | 레이어 | 기술 | 선택 이유 |
 |--------|------|----------|
 | **UI** | Streamlit | 빠른 개발, Python 친화적, 무료 호스팅 |
-| **LLM** | Groq API (Llama 3.3 70B) | 무료 티어, 초고속 추론, 한국어 지원 |
+| **LLM** | Groq API (Llama 3.1 8B) | 무료 티어, 초고속 추론, 한국어 지원 |
 | **Embedding** | HuggingFace (BGE-M3) | 무료, 다국어 지원, 로컬 실행 |
 | **Vector DB** | ChromaDB | 무료, 설치 간편, 메타데이터 지원 |
 | **PDF 처리** | PyPDF + Unstructured | 안정적, 다양한 PDF 형식 지원 |

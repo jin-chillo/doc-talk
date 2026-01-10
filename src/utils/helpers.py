@@ -3,6 +3,10 @@
 import hashlib
 from typing import BinaryIO
 
+# 파일 해시 계산 시 한 번에 읽을 청크 크기 (바이트)
+# 8KB는 메모리 효율성과 I/O 성능 사이의 적절한 균형
+HASH_CHUNK_SIZE = 8192
+
 
 def calculate_file_hash(file: BinaryIO) -> str:
     """파일 해시 계산 (SHA-256).
@@ -15,7 +19,7 @@ def calculate_file_hash(file: BinaryIO) -> str:
     """
     sha256_hash = hashlib.sha256()
     file.seek(0)
-    for chunk in iter(lambda: file.read(8192), b""):
+    for chunk in iter(lambda: file.read(HASH_CHUNK_SIZE), b""):
         sha256_hash.update(chunk)
     file.seek(0)
     return sha256_hash.hexdigest()
@@ -39,6 +43,13 @@ def validate_pdf_file(
     # 확장자 검증
     if not filename.lower().endswith(".pdf"):
         return False, "PDF 파일만 업로드 가능합니다."
+
+    # PDF 매직 바이트 검증 (실제 PDF 파일인지 확인)
+    file.seek(0)
+    magic_bytes = file.read(5)
+    file.seek(0)
+    if magic_bytes != b"%PDF-":
+        return False, "유효한 PDF 파일이 아닙니다."
 
     # 크기 검증
     file.seek(0, 2)  # 파일 끝으로 이동

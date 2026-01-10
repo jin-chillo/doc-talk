@@ -1,9 +1,12 @@
 """PDF 처리 모듈."""
 
+import os
+import re
 import uuid
 from pathlib import Path
 from typing import BinaryIO
 
+import pypdf
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -56,8 +59,32 @@ class PDFProcessor:
 
         Returns:
             저장된 파일 경로
+
+        Raises:
+            PDFProcessingError: 파일명이 유효하지 않을 경우
         """
-        file_path = self.settings.uploads_dir / filename
+        # Issue 2 Fix: Path Traversal 방지
+        # 1. basename만 추출하여 디렉토리 탐색 방지
+        safe_filename = os.path.basename(filename)
+
+        # 2. 숨김 파일 거부
+        if safe_filename.startswith('.'):
+            raise PDFProcessingError("숨김 파일은 업로드할 수 없습니다.")
+
+        # 3. 경로 검증
+        file_path = self.settings.uploads_dir / safe_filename
+        resolved_path = file_path.resolve()
+
+        # Python 3.9+에서는 is_relative_to() 사용
+        try:
+            if not resolved_path.is_relative_to(self.settings.uploads_dir.resolve()):
+                raise PDFProcessingError("잘못된 파일 경로입니다.")
+        except AttributeError:
+            # Python 3.8 이하 호환성 (프로젝트는 3.11+이지만 안전성 고려)
+            uploads_dir_resolved = self.settings.uploads_dir.resolve()
+            if uploads_dir_resolved not in resolved_path.parents and resolved_path != uploads_dir_resolved:
+                raise PDFProcessingError("잘못된 파일 경로입니다.") from None
+
         with open(file_path, "wb") as f:
             f.write(file.read())
         file.seek(0)
@@ -76,14 +103,20 @@ class PDFProcessor:
             PDFProcessingError: PDF 로드 실패 시
         """
         try:
+            # Issue 3 Fix: 전체 로드 전에 페이지 수 검증
+            with open(file_path, "rb") as f:
+                pdf_reader = pypdf.PdfReader(f)
+                page_count = len(pdf_reader.pages)
+
+                if page_count > self.settings.max_pages:
+                    raise PDFProcessingError(
+                        f"페이지 수가 {self.settings.max_pages}페이지를 초과합니다. "
+                        f"(현재: {page_count}페이지)"
+                    )
+
+            # 페이지 수 검증 후 실제 로드
             loader = PyPDFLoader(str(file_path))
             documents = loader.load()
-
-            # 페이지 수 검증
-            if len(documents) > self.settings.max_pages:
-                raise PDFProcessingError(
-                    f"페이지 수가 {self.settings.max_pages}페이지를 초과합니다."
-                )
 
             return documents
         except PDFProcessingError:
@@ -101,7 +134,7 @@ class PDFProcessor:
         Returns:
             정리된 텍스트
         """
-        import re
+        # Issue 1 Fix: import re를 모듈 레벨로 이동 (상단에 위치)
 
         # NULL 문자 및 기타 제어 문자 제거
         text = text.replace("\x00", "")

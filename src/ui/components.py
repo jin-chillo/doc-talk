@@ -32,7 +32,7 @@ def display_error(message: str) -> None:
     Args:
         message: 에러 메시지
     """
-    st.error(f"{message}")
+    st.error(message)
 
 
 def display_success(message: str) -> None:
@@ -41,7 +41,7 @@ def display_success(message: str) -> None:
     Args:
         message: 성공 메시지
     """
-    st.success(f"{message}")
+    st.success(message)
 
 
 def display_warning(message: str) -> None:
@@ -50,4 +50,4 @@ def display_warning(message: str) -> None:
     Args:
         message: 경고 메시지
     """
-    st.warning(f"{message}")
+    st.warning(message)

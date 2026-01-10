@@ -80,3 +80,15 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 addopts = "-v --cov=src --cov-report=term-missing"
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+omit = [
+    "src/ui/*",
+    "src/main.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]

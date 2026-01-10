@@ -1,8 +1,11 @@
 """대화 관리 모듈."""
 
+import json
+from pathlib import Path
 
 from src.config import Settings
 from src.models.message import Message, MessageRole, Source
+from src.utils.logger import logger
 
 
 class ConversationManager:
@@ -48,7 +51,7 @@ class ConversationManager:
     def _trim_history(self) -> None:
         """히스토리 최대 개수 유지."""
         max_messages = self.settings.max_history * 2  # user + assistant 쌍
-        if len(self._history) > max_messages:
+        if len(self._history) >= max_messages:
             # 가장 오래된 메시지부터 삭제 (시스템 메시지 제외)
             self._history = self._history[-max_messages:]
 
@@ -101,3 +104,32 @@ class ConversationManager:
     def __len__(self) -> int:
         """메시지 수 반환."""
         return len(self._history)
+
+    def _get_save_path(self) -> Path:
+        """저장 파일 경로 반환."""
+        return self.settings.data_dir / "conversation.json"
+
+    def save(self) -> None:
+        """대화 히스토리를 파일에 저장."""
+        save_path = self._get_save_path()
+        try:
+            data = [msg.model_dump(mode="json") for msg in self._history]
+            save_path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+            logger.info(f"대화 히스토리 저장 완료: {len(self._history)}개 메시지")
+        except Exception as e:
+            logger.error(f"대화 히스토리 저장 실패: {e}")
+
+    def load(self) -> None:
+        """파일에서 대화 히스토리 복원."""
+        save_path = self._get_save_path()
+        if not save_path.exists():
+            logger.info("저장된 대화 히스토리 없음")
+            return
+
+        try:
+            data = json.loads(save_path.read_text())
+            self._history = [Message.model_validate(msg) for msg in data]
+            logger.info(f"대화 히스토리 복원 완료: {len(self._history)}개 메시지")
+        except Exception as e:
+            logger.error(f"대화 히스토리 복원 실패: {e}")
+            self._history = []

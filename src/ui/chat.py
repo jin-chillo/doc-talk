@@ -28,6 +28,7 @@ def render_chat(
     with col2:
         if st.button("초기화"):
             conversation.clear()
+            conversation.save()  # 빈 상태 저장
             st.rerun()
 
     # 채팅 히스토리 표시
@@ -92,7 +93,7 @@ def render_chat_input(
 
                 for chunk, sources in rag_engine.query_stream(prompt):
                     full_response += chunk
-                    response_placeholder.markdown(full_response + "|")
+                    response_placeholder.markdown(full_response + "▌")
                     final_sources = sources
 
                 # 최종 응답
@@ -101,6 +102,9 @@ def render_chat_input(
                 # 출처 표시
                 with sources_placeholder:
                     display_sources(final_sources)
+
+                # 대화 히스토리 저장
+                conversation.save()
 
             except LLMError as e:
                 display_error(e.message)
