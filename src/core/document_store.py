@@ -184,21 +184,27 @@ class DocumentStore:
     def clear_all(self) -> None:
         """모든 문서 및 벡터 데이터 초기화.
 
-        ChromaDB 컬렉션의 모든 데이터와 메모리 내 문서 메타데이터를 삭제합니다.
+        ChromaDB 컬렉션의 모든 데이터, 메모리 내 문서 메타데이터,
+        업로드된 파일들을 모두 삭제합니다.
 
         Raises:
             VectorStoreError: 초기화 실패 시
         """
         try:
-            # ChromaDB 컬렉션 삭제 후 재생성
-            if self._vectorstore is not None:
-                # 컬렉션의 모든 문서 삭제
-                collection = self._vectorstore._collection
-                # 모든 ID 가져와서 삭제
-                all_ids = collection.get()["ids"]
-                if all_ids:
-                    collection.delete(ids=all_ids)
-                logger.info("ChromaDB 컬렉션 초기화 완료")
+            # ChromaDB 컬렉션의 모든 문서 삭제 (vectorstore 프로퍼티로 초기화 보장)
+            collection = self.vectorstore._collection
+            all_ids = collection.get()["ids"]
+            if all_ids:
+                collection.delete(ids=all_ids)
+            logger.info(f"ChromaDB 컬렉션 초기화 완료: {len(all_ids)}개 벡터 삭제")
+
+            # 업로드된 파일 삭제
+            deleted_files = 0
+            for file_path in self.settings.uploads_dir.iterdir():
+                if file_path.is_file() and file_path.name != ".gitkeep":
+                    file_path.unlink()
+                    deleted_files += 1
+            logger.info(f"업로드 파일 삭제 완료: {deleted_files}개 파일")
 
             # 메모리 내 문서 메타데이터 초기화
             self._documents.clear()

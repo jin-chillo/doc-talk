@@ -491,3 +491,35 @@ class TestDocumentStore:
 
         # 비활성화 상태 유지
         assert new_store.get_document("doc-123").is_active is False
+
+    def test_clear_all_deletes_uploaded_files(
+        self, test_settings, mock_embeddings, mock_chroma, tmp_path
+    ):
+        """clear_all 시 업로드된 파일도 삭제되는지 확인."""
+        # 임시 uploads 디렉토리 설정
+        uploads_dir = tmp_path / "uploads"
+        uploads_dir.mkdir()
+        test_settings.uploads_dir = uploads_dir
+
+        # 테스트 파일 생성
+        test_file1 = uploads_dir / "test1.pdf"
+        test_file2 = uploads_dir / "test2.pdf"
+        gitkeep = uploads_dir / ".gitkeep"
+        test_file1.write_text("content1")
+        test_file2.write_text("content2")
+        gitkeep.write_text("")
+
+        store = DocumentStore(settings=test_settings)
+
+        # 벡터스토어 접근
+        _ = store.vectorstore
+        mock_chroma._collection.get.return_value = {"ids": []}
+
+        # 전체 초기화
+        store.clear_all()
+
+        # PDF 파일들은 삭제됨
+        assert not test_file1.exists()
+        assert not test_file2.exists()
+        # .gitkeep은 유지됨
+        assert gitkeep.exists()
